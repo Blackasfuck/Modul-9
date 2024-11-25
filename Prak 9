@@ -1,1 +1,98 @@
+#Dekorator
+using System;
+
+public interface IReport
+{
+    string Generate();
+}
+
+public class SalesReport : IReport
+{
+    public string Generate() => "Sales Report Data";
+}
+
+public abstract class ReportDecorator : IReport
+{
+    protected IReport _report;
+    protected ReportDecorator(IReport report) => _report = report;
+    public abstract string Generate();
+}
+
+public class DateFilterDecorator : ReportDecorator
+{
+    private string _startDate;
+    private string _endDate;
+    public DateFilterDecorator(IReport report, string startDate, string endDate) : base(report)
+    {
+        _startDate = startDate;
+        _endDate = endDate;
+    }
+    public override string Generate() => $"{_report.Generate()} with Date Filter: {_startDate} to {_endDate}";
+}
+
+public class SortingDecorator : ReportDecorator
+{
+    private string _sortingCriteria;
+    public SortingDecorator(IReport report, string sortingCriteria) : base(report)
+    {
+        _sortingCriteria = sortingCriteria;
+    }
+    public override string Generate() => $"{_report.Generate()} sorted by {_sortingCriteria}";
+}
+
+public class CsvExportDecorator : ReportDecorator
+{
+    public CsvExportDecorator(IReport report) : base(report) { }
+    public override string Generate() => $"{_report.Generate()} exported to CSV";
+}
+
+class Program
+{
+    static void Main()
+    {
+        IReport report = new SalesReport();
+        report = new DateFilterDecorator(report, "2024-01-01", "2024-12-31");
+        report = new SortingDecorator(report, "Total Sales");
+        report = new CsvExportDecorator(report);
+        Console.WriteLine(report.Generate());
+    }
+}
+#Adapter
+using System;
+
+public interface IInternalDeliveryService
+{
+    void Deliver(string package, string address);
+}
+
+public class InternalDeliveryService : IInternalDeliveryService
+{
+    public void Deliver(string package, string address) =>
+        Console.WriteLine($"Delivering {package} to {address} using internal service.");
+}
+
+public class ExternalLogisticsServiceA
+{
+    public void ShipOrder(string packageDetails, string destination) =>
+        Console.WriteLine($"Shipping {packageDetails} to {destination} via External Logistics A.");
+}
+
+public class LogisticsAdapterA : IInternalDeliveryService
+{
+    private readonly ExternalLogisticsServiceA _externalService;
+    public LogisticsAdapterA(ExternalLogisticsServiceA externalService) => _externalService = externalService;
+    public void Deliver(string package, string address) => _externalService.ShipOrder(package, address);
+}
+
+class Program
+{
+    static void Main()
+    {
+        IInternalDeliveryService internalService = new InternalDeliveryService();
+        internalService.Deliver("Books", "123 Main St");
+
+        IInternalDeliveryService externalServiceA = new LogisticsAdapterA(new ExternalLogisticsServiceA());
+        externalServiceA.Deliver("Electronics", "456 Market St");
+    }
+}
 
